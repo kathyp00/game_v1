@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(game2 CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(MY_FRAMEWORK_DIR "$ENV{HOME}/Documents/sdl_framework")
 
 add_executable(MyGame
@@ -9,11 +9,6 @@ add_executable(MyGame
     animation.h
     timer.h
     game_object.h
-)
-
-## Remove the need of relative path when including file 
-target_include_directories(MyGame PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 ## clean previous build
