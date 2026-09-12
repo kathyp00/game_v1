@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(game2 CXX)
+project(MyGame CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(MY_FRAMEWORK_DIR "$ENV{HOME}/Documents/sdl_framework")
@@ -11,13 +11,11 @@ add_executable(MyGame
     game_object.h
 )
 
-## clean previous build
-add_custom_target(CleanPreviousOutputs
-    COMMAND ${CMAKE_COMMAND} -E rm -f "${CMAKE_CURRENT_BINARY_DIR}/MyGame${CMAKE_EXECUTABLE_SUFFIX}"
-    COMMENT "Wiping previous build assets and executable..."
-)
+target_compile_options(MyGame PRIVATE -Wno-switch)
 
-add_dependencies(MyGame CleanPreviousOutputs)
+add_custom_command(TARGET MyGame PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Starting fresh build step..."
+)
 
 target_compile_options(MyGame PRIVATE "-F${MY_FRAMEWORK_DIR}")
 target_link_options(MyGame PRIVATE "-F${MY_FRAMEWORK_DIR}")
