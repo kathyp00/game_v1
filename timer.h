@@ -8,12 +8,14 @@ class Timer {
 public :
     Timer(float length) : length(length), time(0), timeout(false) {}
     
-    void step(float deltaTime) {
+    bool step(float deltaTime) {
         time += deltaTime;
         if (time >= length) {
             time -= length;
             timeout = true;
+            return true;
         }
+        return false;
     }
 
     bool isTimeout() const { return timeout; }

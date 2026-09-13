@@ -1,6 +1,7 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_main.h"
 #include "SDL3_image/SDL_image.h"
+#include "SDL3_mixer/SDL_mixer.h"
 #include <vector>
 #include <iostream>
 #include <stdio.h>
@@ -16,8 +17,11 @@ struct SDLState {
     SDL_Renderer* renderer;
     int width, height, logW, logH;
     const bool* keys;
+    bool fullscreen;
 
-    SDLState() : keys(SDL_GetKeyboardState(nullptr)) {}
+    SDLState() : keys(SDL_GetKeyboardState(nullptr)) {
+        fullscreen = false;
+    }
 };
 
 const size_t LAYER_IDX_LEVEL = 0;
@@ -60,9 +64,21 @@ struct Resources {
     const int ANIM_BULLET_MOVING = 0;
     const int ANIM_BULLET_HIT = 1;
     vector<Animation> bulletAnims;
+    const int ANIM_ENEMY = 0;
+    const int ANIM_ENEMY_HIT = 1;
+    const int ANIM_ENEMY_DIE = 2;
+    vector<Animation> enemyAnims;
 
     vector<SDL_Texture*> textures;
-    SDL_Texture* texIdle, *texRun, *texBrick, *texGrass, *texGround, *texPanel, *texSlide, *texBg1, *texBg2, *texBg3, *texBg4, *texBullet, *texBulletHit, *texShoot, *texRunShoot, *texSlideShoot;
+    SDL_Texture* texIdle, *texRun, *texBrick, *texGrass, *texGround, *texPanel, *texSlide, *texBg1, *texBg2, *texBg3, *texBg4, *texBullet, *texBulletHit, *texShoot, *texRunShoot, *texSlideShoot, *texEnemy, *texEnemyHit, *texEnemyDie;
+
+    MIX_Mixer* mixer;
+    vector<MIX_Audio*> chunks;
+    MIX_Audio* chunkShoot;
+    MIX_Audio* chunkShootHit;
+    MIX_Audio* chunkEnemyHit;
+    MIX_Audio* musicMain;
+
 
 
     SDL_Texture* loadTexture(SDL_Renderer* renderer, const string& filepath) {
@@ -71,6 +87,18 @@ struct Resources {
         textures.push_back(tex);
         return tex;
     }
+
+    MIX_Audio* loadChunk(const string& filepath) {
+        mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+        MIX_Audio* sound = MIX_LoadAudio(mixer, filepath.c_str(), true);
+        MIX_Track* sfxTrack = MIX_CreateTrack(mixer);
+        MIX_SetTrackAudio(sfxTrack, sound);
+        MIX_SetTrackGain(sfxTrack, 0.5f); // 50 % volume
+        chunks.push_back(sound);
+        return sound;
+    }
+
+
 
     void load(SDLState& state) {
         playerAnims.resize(5);
@@ -82,6 +110,11 @@ struct Resources {
         bulletAnims.resize(2);
         bulletAnims[ANIM_BULLET_MOVING] = Animation(4, 0.05f);
         bulletAnims[ANIM_BULLET_HIT] = Animation(4, 0.15f);
+        enemyAnims.resize(3);
+        enemyAnims[ANIM_ENEMY] = Animation(8, 1.0f);
+        enemyAnims[ANIM_ENEMY_HIT] = Animation(8, 1.0f);
+        enemyAnims[ANIM_ENEMY_DIE] = Animation(18, 2.0f);
+
         
         texIdle = loadTexture(state.renderer, "data/idle.png");
         texRun = loadTexture(state.renderer, "data/run.png");
@@ -99,12 +132,24 @@ struct Resources {
         texShoot = loadTexture(state.renderer, "data/shoot.png");
         texRunShoot = loadTexture(state.renderer, "data/shoot_run.png");
         texSlideShoot = loadTexture(state.renderer, "data/slide_shoot.png");
+        texEnemy = loadTexture(state.renderer, "data/enemy.png");
+        texEnemyHit = loadTexture(state.renderer, "data/enemy_hit.png");
+        texEnemyDie = loadTexture(state.renderer, "data/enemy_die.png");
+
+        chunkShoot = loadChunk("data/audio/shoot.wav");
+        chunkShootHit = loadChunk("data/audio/wall_hit.wav");
+        chunkEnemyHit = loadChunk("data/audio/enemy_hit.wav");
+        musicMain = MIX_LoadAudio(mixer, "data/audio/Juhani Junkala [Retro Game Music Pack] Level 1.mp3", false);
     }
 
     void unload() {
         for (SDL_Texture* tex : textures) {
             SDL_DestroyTexture(tex);
         }
+        for (MIX_Audio* sound : chunks) {
+            MIX_DestroyAudio(sound);
+        }
+        MIX_DestroyAudio(musicMain);
     }
 
 
@@ -140,6 +185,13 @@ int main(int argc, char* argv[]) {
 
     uint64_t prevTime = SDL_GetTicks();
 
+    MIX_Track* musicTrack = MIX_CreateTrack(res.mixer);
+    MIX_SetTrackAudio(musicTrack, res.musicMain);
+    MIX_SetTrackGain(musicTrack, 0.3f);
+    SDL_PropertiesID options = SDL_CreateProperties();
+    SDL_SetNumberProperty(options, MIX_PROP_PLAY_LOOPS_NUMBER, -1);
+    MIX_PlayTrack(musicTrack, options);
+
     // game loop
     bool running = true;
     while (running) {
@@ -165,6 +217,9 @@ int main(int argc, char* argv[]) {
                     handleKeyInput(state, gs, gs.player(), event.key.scancode, false);
                     if (event.key.scancode == SDL_SCANCODE_F12) {
                         gs.debugMode = !gs.debugMode;
+                    } else if (event.key.scancode == SDL_SCANCODE_F11) {
+                        state.fullscreen = !state.fullscreen;
+                        SDL_SetWindowFullscreen(state.window, state.fullscreen);
                     }
                     break;
                 }
@@ -175,20 +230,12 @@ int main(int argc, char* argv[]) {
         for (auto& layer : gs.layers) {
             for (GameObject& obj : layer) {
                 update(state, gs, res, obj, deltaTime);
-
-                // update animation
-                if (obj.currentAnimation != -1) {
-                    obj.animations[obj.currentAnimation].step(deltaTime);
-                }
             }
         }
 
         // update bullets
         for (GameObject& bullet : gs.bullets) {
             update(state, gs, res, bullet, deltaTime);
-            if (bullet.currentAnimation != -1) {
-                bullet.animations[bullet.currentAnimation].step(deltaTime);
-            }
         }
 
         // calculate viewport position
@@ -225,7 +272,10 @@ int main(int argc, char* argv[]) {
 
         // draw bullets
         for (GameObject& bullet : gs.bullets) {
-            drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
+            if (bullet.data.bullet.state != BulletState::inactive) {
+                drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
+            }
+            
         }
 
         // draw fg tiles
@@ -252,6 +302,7 @@ int main(int argc, char* argv[]) {
 
     res.unload();
     cleanup(state);
+    SDL_DestroyProperties(options);
     return 0;
 }
 
@@ -281,6 +332,19 @@ bool initialization(SDLState& state) {
 
     // config presentation, keep figure scale regardless of window size
     SDL_SetRenderLogicalPresentation(state.renderer, state.logW, state.logH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
+    // init sdl mixer
+    if (!SDL_Init(SDL_INIT_AUDIO)) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "error", "error init audio", nullptr);
+        cleanup(state);
+        initSuccess = false;
+    }
+    if (!MIX_Init()) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "error", "error init mixer", nullptr);
+        cleanup(state);
+        initSuccess = false;
+    }
+
     return initSuccess;
 }
 
@@ -292,7 +356,7 @@ void cleanup(SDLState&  state) {
 
 void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float width, float height, float deltaTime) {
     float srcX = obj.currentAnimation != -1 
-                ? obj.animations[obj.currentAnimation].currentFrame() * width : 0.0f;
+                ? obj.animations[obj.currentAnimation].currentFrame() * width : (obj.spriteFrame - 1) * width;
 
     SDL_FRect src {
         .x = srcX,
@@ -310,7 +374,18 @@ void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float wid
     };
 
     SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-    SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+    if (!obj.shouldFlash) {
+        SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+    } else {
+        // flash object
+        SDL_SetTextureColorModFloat(obj.texture, 2.5f, 1.0f, 1.0f);
+        SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+        SDL_SetTextureColorModFloat(obj.texture, 1.0f, 1.0f, 1.0f);
+
+        if (obj.flashTimer.step(deltaTime)) {
+            obj.shouldFlash = false;
+        }
+    }
 
     if (gs.debugMode) {
         SDL_FRect rectA {
@@ -327,6 +402,11 @@ void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float wid
 }
 
 void update(const SDLState& state, GameState& gs, Resources& res, GameObject& obj, float deltaTime) {
+
+    // update animation
+    if (obj.currentAnimation != -1) {
+        obj.animations[obj.currentAnimation].step(deltaTime);
+    }
 
     if (obj.dynamic && !obj.grounded) {
         // apply some gravity
@@ -367,9 +447,12 @@ void update(const SDLState& state, GameState& gs, Resources& res, GameObject& ob
                         .w = static_cast<float>(res.texBullet->h),
                         .h = static_cast<float>(res.texBullet->h),
                     };
+
+                    const int yVariation = 40;
+                    const float yVelocity = SDL_rand(yVariation) - yVariation / 2.0f;
                     bullet.velocity = glm::vec2(
                         obj.velocity.x + 600.0f * obj.direction,
-                        0
+                        yVelocity
                     );
                     bullet.maxSpeedX = 1000.0f;
                     bullet.animations = res.bulletAnims;
@@ -396,6 +479,7 @@ void update(const SDLState& state, GameState& gs, Resources& res, GameObject& ob
                     if (!foundInactive) {
                         gs.bullets.push_back(bullet);
                     }
+                    MIX_PlayAudio(res.mixer, res.chunkShoot);
                 }
             } else {
                 obj.texture = tex;
@@ -445,13 +529,59 @@ void update(const SDLState& state, GameState& gs, Resources& res, GameObject& ob
             }
         }
     } else if (obj.type == ObjectType::bullet) {
-        // bullet passed edge of screen
-        if (obj.position.x - gs.mapViewport.x < 0 ||
-            obj.position.x - gs.mapViewport.x > state.logW ||
-            obj.position.y - gs.mapViewport.y < 0 ||
-            obj.position.y - gs.mapViewport.y > state.logH) {
-            obj.data.bullet.state = BulletState::inactive;
+
+        switch (obj.data.bullet.state) {
+            case BulletState::moving : {
+                // bullet passed edge of screen
+                if (obj.position.x - gs.mapViewport.x < 0 ||
+                    obj.position.x - gs.mapViewport.x > state.logW ||
+                    obj.position.y - gs.mapViewport.y < 0 ||
+                    obj.position.y - gs.mapViewport.y > state.logH) {
+                    obj.data.bullet.state = BulletState::inactive;
+                }
+                break;
+            }
+            case BulletState::colliding : {
+                if (obj.animations[obj.currentAnimation].isDone()) {
+                    obj.data.bullet.state = BulletState::inactive;
+                }
+                break;
+            }
         }
+    } else if (obj.type == ObjectType::enemy) {
+        EnemyData& d = obj.data.enemy;
+        switch (d.state) {
+            case EnemyState::shambling : {
+                glm::vec2 playerDir = gs.player().position - obj.position;
+                if (glm::length(playerDir) < 100) {
+                    currentDirection = playerDir.x < 0 ? -1 : 1;
+                    obj.acceleration = glm::vec2(30,0);
+                } else {
+                    obj.acceleration = glm::vec2(0);
+                    obj.velocity.x = 0;
+                }
+                break;
+            }
+            case EnemyState::damaged : {
+                if (d.damagedTimer.step(deltaTime)) {
+                    d.state = EnemyState::shambling;
+                    obj.texture = res.texEnemy;
+                    obj.currentAnimation = res.ANIM_ENEMY;
+                }
+                break;
+            }
+            case EnemyState::dead : {
+                obj.velocity.x = 0;
+                if (obj.currentAnimation != -1 &&
+                    obj.animations[obj.currentAnimation].isDone()) {
+                    // remove animation & set to last frame
+                    obj.currentAnimation = -1;
+                    obj.spriteFrame = 18;
+                }
+                break;
+            }
+        }
+
     }
 
     if (currentDirection) {
@@ -535,18 +665,57 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources& res, con
                 genericResponse();
                 break;
             }
-        }
-    } else if (objA.type == ObjectType::bullet) {
-        switch (objA.data.bullet.state) {
-            case BulletState::moving : {
-                genericResponse();
-                objA.data.bullet.state = BulletState::colliding;
-                objA.texture = res.texBulletHit;
-                objA.currentAnimation = res.ANIM_BULLET_HIT;
+            case ObjectType::enemy : {
+                if (objB.data.enemy.state != EnemyState::dead) {
+                    objA.velocity = glm::vec2(100, 0) * -objA.direction;
+                }
                 break;
             }
         }
-
+    } else if (objA.type == ObjectType::bullet) {
+        bool passthrough = false;
+        switch (objA.data.bullet.state) {
+            case BulletState::moving : {
+                switch(objB.type) {
+                    case ObjectType::level : {
+                        MIX_PlayAudio(res.mixer, res.chunkShootHit);
+                        break;
+                    }
+                    case ObjectType::enemy : {
+                        EnemyData& d = objB.data.enemy;
+                        if (d.state != EnemyState::dead) {
+                            objB.direction = -objA.direction;
+                            objB.shouldFlash = true;
+                            objB.flashTimer.reset();
+                            objB.texture = res.texEnemyHit;
+                            objB.currentAnimation = res.ANIM_ENEMY_HIT;
+                            d.state = EnemyState::damaged;
+                            d.healthPoints -= 10;
+                            if (d.healthPoints <= 0) {
+                                d.state = EnemyState::dead;
+                                objB.texture = res.texEnemyDie;
+                                objB.currentAnimation = res.ANIM_ENEMY_DIE;
+                                MIX_PlayAudio(res.mixer, res.chunkEnemyHit);
+                            }
+                        } else {
+                            passthrough = true;
+                        }
+                        break;
+                    }
+                }
+                if (!passthrough) {
+                    genericResponse();
+                    objA.velocity += 0;
+                    objA.data.bullet.state = BulletState::colliding;
+                    objA.texture = res.texBulletHit;
+                    objA.currentAnimation = res.ANIM_BULLET_HIT;
+                }
+                
+                break;
+            }
+        }
+    } else if (objA.type == ObjectType::enemy) {
+        genericResponse();
     }
 }
 
@@ -584,8 +753,8 @@ void createTiles(const SDLState& state, GameState& gs,  const Resources& res) {
     short map[MAP_ROWS][MAP_COLS] = {
         0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 2, 2, 0, 0, 0, 0, 0, 3, 2, 2, 2, 0, 0, 0, 0, 2, 0, 2, 0, 0, 3, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
@@ -626,6 +795,19 @@ void createTiles(const SDLState& state, GameState& gs,  const Resources& res) {
                         case 2 : {
                             GameObject o = createObject(r, c, res.texPanel, ObjectType::level);
                             gs.layers[LAYER_IDX_LEVEL].push_back(o);
+                            break;
+                        }
+                        case 3 : {
+                            GameObject o = createObject(r, c, res.texEnemy, ObjectType::enemy);
+                            o.data.enemy = EnemyData();
+                            o.currentAnimation = res.ANIM_ENEMY;
+                            o.animations = res.enemyAnims;
+                            o.collider = SDL_FRect {
+                                .x = 10, .y = 4, .w = 12, .h = 28
+                            };
+                            o.maxSpeedX = 15;
+                            o.dynamic = true;
+                            gs.layers[LAYER_IDX_CHARACTERS].push_back(o);
                             break;
                         }
                         case 4 : {
@@ -670,14 +852,14 @@ void handleKeyInput(const SDLState& state, GameState& gs, GameObject& obj, SDL_S
     if (obj.type == ObjectType::player) {
         switch(obj.data.player.state) {
             case PlayerState::idle : {
-                if (key == SDL_SCANCODE_K && keyDown) {
+                if (key == SDL_SCANCODE_K && keyDown && obj.grounded) {
                     obj.data.player.state = PlayerState::jumping;
                     obj.velocity.y += JUMP_FORCE;
                 }
                 break;
             }
             case PlayerState::running : {
-                if (key == SDL_SCANCODE_K && keyDown) {
+                if (key == SDL_SCANCODE_K && keyDown && obj.grounded) {
                     obj.data.player.state = PlayerState::jumping;
                     obj.velocity.y += JUMP_FORCE;
                 }
