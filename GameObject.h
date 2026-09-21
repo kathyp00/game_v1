@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <SDL3/SDL.h>
-#include "animation.h"
+#include "Animation.h"
 using namespace std;
 
 enum class PlayerState {
