@@ -14,3 +14,7 @@ Currently WIP, not fully functional yet, TODO list
 - refactor the code
 - update the map section
 - add more features
+
+## Current Snapshot
+<img width="502" height="370" alt="pic2" src="https://github.com/user-attachments/assets/50c93a11-3ae3-4765-8eda-c3c33d3c6456" />
+
