@@ -3,9 +3,6 @@
 struct GameState {
     const size_t LAYER_IDX_LEVEL = 0;
     const size_t LAYER_IDX_CHARACTERS = 1;
-    const int MAP_ROWS = 5;
-    const int MAP_COLS = 50;
-    const int TILE_SIZE = 32;
     array<vector<GameObject>, 2> layers;
     vector<GameObject> backgroundTiles;
     vector<GameObject> foregroundTiles;
@@ -16,6 +13,7 @@ struct GameState {
     float bg2Scroll, bg3Scroll, bg4Scroll;
     bool debugMode;
 
+    GameState() {}
     GameState(SDLState& state) {
         playerIndex = -1;
         mapViewport = SDL_FRect {

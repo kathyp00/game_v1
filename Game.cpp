@@ -23,9 +23,8 @@ void Game::init() {
 }
 
 void Game::handle_events() {
-    uint64_t nowTime = SDL_GetPerformanceCounter();
+    nowTime = SDL_GetPerformanceCounter();
     deltaTime = (float)(nowTime - prevTime) / (float)freq;
-    prevTime = nowTime;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_EVENT_QUIT : {
@@ -127,6 +126,7 @@ void Game::render() {
 
     // swap buffres and present
     SDL_RenderPresent(state.renderer);
+    prevTime = nowTime;
 }
 
 
@@ -145,22 +145,6 @@ void Game::create_tiles() {
         0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 2, 2, 0, 0, 0, 0, 0, 3, 2, 2, 2, 0, 0, 0, 0, 2, 0, 2, 0, 0, 3, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    };
-
-    short foreground[MAP_ROWS][MAP_COLS] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        5, 0, 0, 5, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    };
-
-    short background[MAP_ROWS][MAP_COLS] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
     const auto loadMap = [this](short layer[MAP_ROWS][MAP_COLS]) {
@@ -215,29 +199,17 @@ void Game::create_tiles() {
                         gs->playerIndex = gs->layers[LAYER_IDX_CHARACTERS].size() - 1;
                         break;
                     }
-                    case 5 : {
-                        GameObject o = createObject(r, c, res->texGrass, ObjectType::level);
-                        gs->foregroundTiles.push_back(o);
-                        break;
-                    }
-                    case 6 : {
-                        GameObject o = createObject(r, c, res->texBrick, ObjectType::level);
-                        gs->backgroundTiles.push_back(o);
-                        break;
-                    }
                 }
             }
         }
     };
     loadMap(map);
-    loadMap(background);
-    loadMap(foreground);
     assert(gs->playerIndex != -1);
 }
 
 void Game::clean() {
-    state.cleanup();
     res->unload();
+    state.cleanup();
     SDL_DestroyProperties(res->options);
 }
 
@@ -255,13 +227,16 @@ void Game::update(GameObject& obj) {
 
     float currentDirection = 0;
     if (obj.type == ObjectType::player) {
-        currentDirection = update_player(obj);
+        update_player(obj, currentDirection);
     } else if (obj.type == ObjectType::bullet) {
         update_bullet(obj);
     } else if (obj.type == ObjectType::enemy) {
-        currentDirection = update_enemy(obj);
+        update_enemy(obj, currentDirection);
     }
-    obj.direction = currentDirection;
+
+    if (currentDirection) {
+        obj.direction = currentDirection;
+    }
 
     // add acceleration to velocity
     obj.velocity += currentDirection * obj.acceleration * deltaTime;
@@ -272,6 +247,7 @@ void Game::update(GameObject& obj) {
     // add velocity to position
     obj.position += obj.velocity * deltaTime;
 
+    bool foundGround = false;
     // handle collision detection
     if (obj.type != ObjectType::level) {
         for (auto& layer : gs->layers) {
@@ -279,13 +255,44 @@ void Game::update(GameObject& obj) {
                 if (&obj == &objB)
                     continue;
                 check_collision(obj, objB);
+                if (objB.type == ObjectType::level) {
+                    // grounded sensor
+                    SDL_FRect sensor {
+                        .x = obj.position.x + obj.collider.x,
+                        .y = obj.position.y + obj.collider.y + obj.collider.h,
+                        .w = obj.collider.w, .h = 1
+                    };
+                    SDL_FRect rectB {
+                        .x = objB.position.x + objB.collider.x,
+                        .y = objB.position.y + objB.collider.y,
+                        .w = objB.collider.w,
+                        .h = objB.collider.h
+                    };
+                    SDL_FRect rectC{ 0 };
+                    if (SDL_GetRectIntersectionFloat(&sensor, &rectB, &rectC)) {
+                        foundGround = true;
+                    }
+                }
             }
+        }
+    }
+    
+    if (obj.grounded != foundGround) {
+        // switching grounded state
+        obj.grounded = foundGround;
+        if (foundGround && obj.type == ObjectType::player) {
+            obj.data.player.state = PlayerState::running;
         }
     }
 }
 
-float Game::update_player(GameObject& obj) {
-    float currentDirection = state.keys[SDL_SCANCODE_A] ? (currentDirection - 1) : ((state.keys[SDL_SCANCODE_D]) ? (currentDirection + 1) : currentDirection);
+void Game::update_player(GameObject& obj, float& currentDirection) {
+    if (state.keys[SDL_SCANCODE_A]) {
+        currentDirection += -1;
+    }
+    if (state.keys[SDL_SCANCODE_D]) {
+        currentDirection += 1;
+    }
     Timer& weaponTimer = obj.data.player.weaponTimer;
     weaponTimer.step(deltaTime);
 
@@ -372,11 +379,10 @@ float Game::update_player(GameObject& obj) {
             if (!currentDirection) {
                 obj.data.player.state = PlayerState::idle;
             }
-
             // moving in opposite direction of velocity, sliding
             // only neg when signs are diff
             if (obj.velocity.x * obj.direction < 0 && obj.grounded) {
-                handleShooting(res->texSlide, res->texSlideShoot, static_cast<int>(Resources::PLAYER::SLIDE), static_cast<int>(Resources::PLAYER::SLIDE_SHOOT));
+                handleShooting(res->texSlide, res->texSlideShoot, static_cast<int>(Resources::PLAYER::SLIDE), static_cast<int>(Resources::PLAYER::SHOOT));
             } else {
                 handleShooting(res->texRun, res->texRunShoot, static_cast<int>(Resources::PLAYER::RUN), static_cast<int>(Resources::PLAYER::RUN));
             }
@@ -390,7 +396,6 @@ float Game::update_player(GameObject& obj) {
             break;
         }
     }
-    return currentDirection;
 }
 
 void Game::update_bullet(GameObject& obj) {
@@ -414,8 +419,7 @@ void Game::update_bullet(GameObject& obj) {
     }
 }
 
-float Game::update_enemy(GameObject& obj) {
-    float currentDirection = 0;
+void Game::update_enemy(GameObject& obj, float& currentDirection) {
     EnemyData& d = obj.data.enemy;
     switch (d.state) {
         case EnemyState::shambling : {
@@ -448,7 +452,6 @@ float Game::update_enemy(GameObject& obj) {
             break;
         }
     }
-    return currentDirection;
 }
 
 void Game::collision_response(const SDL_FRect& rectC, GameObject& objA, GameObject& objB) {
@@ -479,7 +482,6 @@ void Game::collision_response(const SDL_FRect& rectC, GameObject& objA, GameObje
         switch(objB.type) {
             case ObjectType::level : {
                 genericResponse();
-                objA.data.player.state = PlayerState::running;
                 break;
             }
             case ObjectType::enemy : {

@@ -15,6 +15,7 @@ public :
     uint64_t freq;
     SDL_Event event;
     float deltaTime;
+    uint64_t nowTime;
     unique_ptr<GameState> gs;
     unique_ptr<Resources> res;
     const size_t LAYER_IDX_LEVEL = 0;
@@ -34,9 +35,9 @@ public :
     void clean();
     void update(GameObject& obj);
     bool running() { return isRunning; }
-    float update_player(GameObject& obj);
+    void update_player(GameObject& obj, float& currentDirection);
     void update_bullet(GameObject& obj);
-    float update_enemy(GameObject& obj);
+    void update_enemy(GameObject& obj, float& currentDirection);
     void collision_response(const SDL_FRect& rectC, GameObject& objA, GameObject& objB);
     void check_collision(GameObject& a, GameObject& b);
     void handle_key_input(GameObject& obj, SDL_Scancode key, bool keyDown);

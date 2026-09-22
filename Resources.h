@@ -52,13 +52,6 @@ struct Resources {
         enemyAnims = { Animation(8, 1.0f),
                        Animation(8, 1.0f),
                        Animation(18, 2.0f)};
-
-        MIX_Track* musicTrack = MIX_CreateTrack(mixer);
-        MIX_SetTrackAudio(musicTrack, musicMain);
-        MIX_SetTrackGain(musicTrack, 0.3f);
-        options = SDL_CreateProperties();
-        SDL_SetNumberProperty(options, MIX_PROP_PLAY_LOOPS_NUMBER, -1);
-        MIX_PlayTrack(musicTrack, options);
     }
 
     SDL_Texture* loadTexture(SDL_Renderer* renderer, const string& filepath) {
@@ -103,6 +96,13 @@ struct Resources {
         soundShootHit = loadSound("data/audio/wall_hit.wav");
         soundEnemyHit = loadSound("data/audio/enemy_hit.wav");
         musicMain = MIX_LoadAudio(mixer, "data/audio/Juhani Junkala [Retro Game Music Pack] Level 1.mp3", false);
+
+        MIX_Track* musicTrack = MIX_CreateTrack(mixer);
+        MIX_SetTrackAudio(musicTrack, musicMain);
+        MIX_SetTrackGain(musicTrack, 0.3f);
+        options = SDL_CreateProperties();
+        SDL_SetNumberProperty(options, MIX_PROP_PLAY_LOOPS_NUMBER, -1);
+        MIX_PlayTrack(musicTrack, options);
     }
 
     void unload() {
