@@ -11,3 +11,7 @@ To Build : `path_to_your_cmake_binary --build path_to_your_working_dir -j `\
 To Run : `./build/name_of_your_executable`
 
 Currently WIP, not functional yet.
+
+## Current Snapshot
+<img width="502" height="370" alt="pic2" src="https://github.com/user-attachments/assets/50c93a11-3ae3-4765-8eda-c3c33d3c6456" />
+
