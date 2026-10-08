@@ -13,5 +13,4 @@ To Run : `./build/name_of_your_executable`
 Currently WIP, not functional yet.
 
 ## Current Snapshot
-<img width="502" height="370" alt="pic2" src="https://github.com/user-attachments/assets/50c93a11-3ae3-4765-8eda-c3c33d3c6456" />
-
+<img width="540" height="391" alt="screen2" src="https://github.com/user-attachments/assets/25855261-760e-4f30-aa67-ee8339f2735a" />
