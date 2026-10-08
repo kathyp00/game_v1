@@ -4,8 +4,6 @@ struct GameState {
     const size_t LAYER_IDX_LEVEL = 0;
     const size_t LAYER_IDX_CHARACTERS = 1;
     array<vector<GameObject>, 2> layers;
-    vector<GameObject> backgroundTiles;
-    vector<GameObject> foregroundTiles;
     vector<GameObject> bullets;
 
     int playerIndex;

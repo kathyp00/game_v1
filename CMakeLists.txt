@@ -6,14 +6,21 @@ set(MY_FRAMEWORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../sdl_framework")
 
 add_executable(MyGame
     main.cpp
-    Game.cpp
-    Animation.h
-    Timer.h
-    Game.h
-    GameObject.h
-    GameState.h
-    Resources.h
-    SDLState.h
+    src/Game.cpp
+    src/Level.cpp
+    src/Game.h
+    src/Animation.h
+    src/Timer.h
+    src/GameObject.h
+    src/GameState.h
+    src/Resources.h
+    src/SDLState.h
+    src/Level.h
+    src/GameInfo.h
+)
+
+target_include_directories(MyGame PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_compile_options(MyGame PRIVATE -Wno-switch)
@@ -41,3 +48,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 target_link_libraries(MyGame PRIVATE glm::glm)
+
+FetchContent_Declare(
+    json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+target_link_libraries(MyGame PRIVATE nlohmann_json::nlohmann_json)

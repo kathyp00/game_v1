@@ -32,7 +32,7 @@ struct Resources {
     vector<Animation> enemyAnims;
 
     vector<SDL_Texture*> textures;
-    SDL_Texture *texIdle, *texRun, *texBrick, *texGrass, *texGround, *texPanel, *texSlide, *texBg1, *texBg2, *texBg3, *texBg4, *texBullet, *texBulletHit, *texShoot, *texRunShoot, *texSlideShoot, *texEnemy, *texEnemyHit, *texEnemyDie;
+    SDL_Texture *texIdle, *texRun, *texComputer, *texGrass, *texGround, *texPanel, *texRock, *texUnderground, *texWeed, *texSlide, *texBg1, *texBg2, *texBg3, *texBg4, *texBullet, *texBulletHit, *texShoot, *texRunShoot, *texSlideShoot, *texEnemy, *texEnemyHit, *texEnemyDie;
 
     MIX_Mixer* mixer;
     vector<MIX_Audio*> sounds;
@@ -75,10 +75,13 @@ struct Resources {
         texIdle = loadTexture(state.renderer, "data/idle.png");
         texRun = loadTexture(state.renderer, "data/run.png");
         texSlide = loadTexture(state.renderer, "data/slide.png");
-        texBrick = loadTexture(state.renderer, "data/tiles/brick.png");
+        texComputer = loadTexture(state.renderer, "data/tiles/computer.png");
         texGrass = loadTexture(state.renderer, "data/tiles/grass.png");
         texGround = loadTexture(state.renderer, "data/tiles/ground.png");
         texPanel = loadTexture(state.renderer, "data/tiles/panel.png");
+        texRock = loadTexture(state.renderer, "data/tiles/rock.png");
+        texUnderground = loadTexture(state.renderer, "data/tiles/underground.png");
+        texWeed = loadTexture(state.renderer, "data/tiles/weed.png");
         texBg1 = loadTexture(state.renderer, "data/bg/bg_layer1.png");
         texBg2 = loadTexture(state.renderer, "data/bg/bg_layer2.png");
         texBg3 = loadTexture(state.renderer, "data/bg/bg_layer3.png");

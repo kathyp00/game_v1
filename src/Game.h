@@ -2,8 +2,7 @@
 #include "SDLState.h"
 #include "Timer.h"
 #include "Animation.h"
-#include "GameState.h"
-#include "Resources.h"
+#include "GameInfo.h"
 using namespace std;
 
 class Game {
@@ -16,13 +15,7 @@ public :
     SDL_Event event;
     float deltaTime;
     uint64_t nowTime;
-    unique_ptr<GameState> gs;
-    unique_ptr<Resources> res;
-    const size_t LAYER_IDX_LEVEL = 0;
-    const size_t LAYER_IDX_CHARACTERS = 1;
-    static constexpr int MAP_ROWS = 5;
-    static constexpr int MAP_COLS = 50;
-    static constexpr int TILE_SIZE = 32;
+    GameInfo info;
 
     Game(const char* title, int width, int height, int logW, int logH);
     ~Game();

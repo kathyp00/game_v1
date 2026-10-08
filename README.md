@@ -10,7 +10,4 @@ The following libraries are required.
 To Build : `path_to_your_cmake_binary --build path_to_your_working_dir -j `\
 To Run : `./build/name_of_your_executable`
 
-Currently WIP, not fully functional yet, TODO list
-- refactor the code
-- update the map section
-- add more features
+Currently WIP, not functional yet.
