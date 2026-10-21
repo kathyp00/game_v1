@@ -3,12 +3,13 @@
 #include "Timer.h"
 #include "Animation.h"
 #include "GameInfo.h"
+#include "Level.h"
 using namespace std;
 
 class Game {
 
 public :
-    SDLState state;
+    //SDLState state;
     bool isRunning = true;
     uint64_t prevTime;
     uint64_t freq;
@@ -16,6 +17,7 @@ public :
     float deltaTime;
     uint64_t nowTime;
     GameInfo info;
+    Level lvl0;
 
     Game(const char* title, int width, int height, int logW, int logH);
     ~Game();
@@ -34,6 +36,5 @@ public :
     void collision_response(const SDL_FRect& rectC, GameObject& objA, GameObject& objB);
     void check_collision(GameObject& a, GameObject& b);
     void handle_key_input(GameObject& obj, SDL_Scancode key, bool keyDown);
-    void draw_paralax_background(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity, float& scrollPos, float scrollFactor);
     void draw_object(GameObject& obj, float width, float height);
 };

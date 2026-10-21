@@ -1,24 +1,23 @@
 #include "Game.h"
-#include "Level.h"
 #include <algorithm>
 #include <iostream>
 using namespace std;
 
-
-Game::Game(const char* title, int width, int height, int logW, int logH) : state(width, height, logW, logH, title) {
+Game::Game(const char* title, int width, int height, int logW, int logH)
+    : info(width, height, logW, logH, title) {
 }
 
 Game::~Game() {}
 
 void Game::init() {
-    if (!state.initialization()) {
+    if (!info.state.initialization()) {
         isRunning = false;
     }
 
     // load game assets and data
     info.res = make_unique<Resources>();
-    info.res->load(state);
-    info.gs = make_unique<GameState>(state);
+    info.res->load(info.state);
+    info.gs = make_unique<GameState>(info.state);
     create_tiles();
 
     isRunning = true;
@@ -36,8 +35,8 @@ void Game::handle_events() {
                 break;
             }
             case SDL_EVENT_WINDOW_RESIZED : {
-                state.width = event.window.data1;
-                state.height = event.window.data2;
+                info.state.width = event.window.data1;
+                info.state.height = event.window.data2;
                 break;
             }
             case SDL_EVENT_KEY_DOWN : {
@@ -49,8 +48,8 @@ void Game::handle_events() {
                 if (event.key.scancode == SDL_SCANCODE_F12) {
                     info.gs->debugMode = !info.gs->debugMode;
                 } else if (event.key.scancode == SDL_SCANCODE_F11) {
-                    state.fullscreen = !state.fullscreen;
-                    SDL_SetWindowFullscreen(state.window, state.fullscreen);
+                    info.state.fullscreen = !info.state.fullscreen;
+                    SDL_SetWindowFullscreen(info.state.window, info.state.fullscreen);
                 }
                 break;
             }
@@ -75,24 +74,20 @@ void Game::game_update() {
 void Game::render() {
     //info.gs->mapViewport.x = (info.gs->player().position.x + info.TILE_SIZE / 2) - info.gs->mapViewport.w / 2;
 
-    info.gs->mapViewport.x = info.gs->player().position.x + info.TILE_SIZE / 2 - info.gs->mapViewport.w / 2;
-    info.gs->mapViewport.y = info.gs->player().position.y + info.TILE_SIZE / 2 - info.gs->mapViewport.h / 2;
+    info.gs->mapViewport.x = info.gs->player().position.x + info.TILE_SIZE / 2.0f - info.gs->mapViewport.w / 2.0f;
+    info.gs->mapViewport.y = info.gs->player().position.y + info.TILE_SIZE / 2.0f - info.gs->mapViewport.h / 2.0f;
 
-    info.gs->mapViewport.x = max(0, static_cast<int>(info.gs->mapViewport.x));
-    info.gs->mapViewport.y = max(0, static_cast<int>(info.gs->mapViewport.y));
-
-    info.gs->mapViewport.x = min(static_cast<int>(info.gs->mapViewport.x), static_cast<int>(state.width - info.gs->mapViewport.w));
-    info.gs->mapViewport.y = min(static_cast<int>(info.gs->mapViewport.y), static_cast<int>(state.height - info.gs->mapViewport.h));
+    const float maxCameraX = max(0.0f, static_cast<float>(info.gs->mapWidth) - info.gs->mapViewport.w);
+    const float maxCameraY = max(0.0f, static_cast<float>(info.gs->mapHeight) - info.gs->mapViewport.h);
+    info.gs->mapViewport.x = clamp(info.gs->mapViewport.x, 0.0f, maxCameraX);
+    info.gs->mapViewport.y = clamp(info.gs->mapViewport.y, 0.0f, maxCameraY);
 
     // perform drawing, whit bg
-    SDL_SetRenderDrawColor(state.renderer, 20, 10, 30, 255);
-    SDL_RenderClear(state.renderer);
+    SDL_SetRenderDrawColor(info.state.renderer, 20, 10, 30, 255);
+    SDL_RenderClear(info.state.renderer);
 
     // draw bg imgs, smaller factor scroll slower
-    SDL_RenderTexture(state.renderer, info.res->texBg1, nullptr, nullptr);
-    //draw_paralax_background(state.renderer, info.res->texBg4, info.gs->player().velocity.x, info.gs->bg4Scroll, 0.075f);
-    //draw_paralax_background(state.renderer, info.res->texBg3, info.gs->player().velocity.x, info.gs->bg3Scroll, 0.150f);
-    //draw_paralax_background(state.renderer, info.res->texBg2, info.gs->player().velocity.x, info.gs->bg2Scroll, 0.3f);
+    SDL_RenderTexture(info.state.renderer, info.res->texBg1, &lvl0.bg_src, &lvl0.bg_dst);
 
     // draw all objects;
     for (auto& layer : info.gs->layers) {
@@ -110,25 +105,24 @@ void Game::render() {
     }
     // display some debug info
     if (info.gs->debugMode) {
-        SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
-        SDL_RenderDebugText(state.renderer, 5, 5, format("S: {}, B: {}, G: {}", static_cast<int>(info.gs->player().data.player.state), info.gs->bullets.size(), info.gs->player().grounded).c_str());
+        SDL_SetRenderDrawColor(info.state.renderer, 255, 255, 255, 255);
+        SDL_RenderDebugText(info.state.renderer, 5, 5, format("S: {}, B: {}, G: {}", static_cast<int>(info.gs->player().data.player.state), info.gs->bullets.size(), info.gs->player().grounded).c_str());
     }
 
     // swap buffres and present
-    SDL_RenderPresent(state.renderer);
+    SDL_RenderPresent(info.state.renderer);
     prevTime = nowTime;
 }
 
 
 void Game::create_tiles() {
-    Level lvl0;
     lvl0.load("map0.ldtk", info);
     assert(info.gs->playerIndex != -1);
 }
 
 void Game::clean() {
     info.res->unload();
-    state.cleanup();
+    info.state.cleanup();
     SDL_DestroyProperties(info.res->options);
 }
 
@@ -206,10 +200,10 @@ void Game::update(GameObject& obj) {
 }
 
 void Game::update_player(GameObject& obj, float& currentDirection) {
-    if (state.keys[SDL_SCANCODE_A]) {
+    if (info.state.keys[SDL_SCANCODE_A]) {
         currentDirection += -1;
     }
-    if (state.keys[SDL_SCANCODE_D]) {
+    if (info.state.keys[SDL_SCANCODE_D]) {
         currentDirection += 1;
     }
     Timer& weaponTimer = obj.data.player.weaponTimer;
@@ -217,7 +211,7 @@ void Game::update_player(GameObject& obj, float& currentDirection) {
 
     const auto handleShooting = [&obj, &weaponTimer, this](
         SDL_Texture* tex, SDL_Texture* shootTex, int animIndex, int shootAnimIndex) {
-        if (state.keys[SDL_SCANCODE_J]) {
+        if (info.state.keys[SDL_SCANCODE_J]) {
             // set shooting tex/anim
             obj.texture = shootTex;
             obj.currentAnimation = shootAnimIndex;
@@ -322,9 +316,9 @@ void Game::update_bullet(GameObject& obj) {
         case BulletState::moving : {
             // bullet passed edge of screen
             if (obj.position.x - info.gs->mapViewport.x < 0 ||
-                obj.position.x - info.gs->mapViewport.x > state.logW ||
+                obj.position.x - info.gs->mapViewport.x > info.state.logW ||
                 obj.position.y - info.gs->mapViewport.y < 0 ||
-                obj.position.y - info.gs->mapViewport.y > state.logH) {
+                obj.position.y - info.gs->mapViewport.y > info.state.logH) {
                 obj.data.bullet.state = BulletState::inactive;
             }
             break;
@@ -500,19 +494,6 @@ void Game::handle_key_input(GameObject& obj, SDL_Scancode key, bool keyDown) {
     }
 }
 
-void Game::draw_paralax_background(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity, float& scrollPos, float scrollFactor) {
-    scrollPos -= xVelocity * scrollFactor * deltaTime;
-    if (scrollPos <= -texture->w) {
-        scrollPos = 0;
-    }
-    SDL_FRect dst {
-        .x = scrollPos, .y = 30,
-        .w = texture->w * 2.0f,
-        .h = static_cast<float>(texture->h)
-    };
-    SDL_RenderTextureTiled(renderer, texture, nullptr, 1, &dst);
-}
-
 void Game::draw_object(GameObject& obj, float width, float height) {
     float srcX = obj.currentAnimation != -1 
                 ? obj.animations[obj.currentAnimation].currentFrame() * width : (obj.spriteFrame - 1) * width;
@@ -527,18 +508,18 @@ void Game::draw_object(GameObject& obj, float width, float height) {
     // where to draw sprite
     SDL_FRect dst {
         .x = obj.position.x - info.gs->mapViewport.x,
-        .y = obj.position.y,
+        .y = obj.position.y - info.gs->mapViewport.y,
         .w = width,
         .h = height
     };
 
     SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
     if (!obj.shouldFlash) {
-        SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+        SDL_RenderTextureRotated(info.state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
     } else {
         // flash object
         SDL_SetTextureColorModFloat(obj.texture, 2.5f, 1.0f, 1.0f);
-        SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+        SDL_RenderTextureRotated(info.state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
         SDL_SetTextureColorModFloat(obj.texture, 1.0f, 1.0f, 1.0f);
 
         if (obj.flashTimer.step(deltaTime)) {
@@ -549,13 +530,13 @@ void Game::draw_object(GameObject& obj, float width, float height) {
     if (info.gs->debugMode) {
         SDL_FRect rectA {
             .x = obj.position.x + obj.collider.x - info.gs->mapViewport.x, 
-            .y= obj.position.y + obj.collider.y,
+            .y= obj.position.y + obj.collider.y - info.gs->mapViewport.y,
             .w = obj.collider.w, 
             .h = obj.collider.h
         };
-        SDL_SetRenderDrawBlendMode(state.renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(state.renderer, 255, 0, 0, 150);
-        SDL_RenderFillRect(state.renderer, &rectA);
-        SDL_SetRenderDrawBlendMode(state.renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderDrawBlendMode(info.state.renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(info.state.renderer, 255, 0, 0, 150);
+        SDL_RenderFillRect(info.state.renderer, &rectA);
+        SDL_SetRenderDrawBlendMode(info.state.renderer, SDL_BLENDMODE_NONE);
     }
 }

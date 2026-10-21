@@ -2,12 +2,17 @@
 #include <fstream>
 #include <iostream>
 
-void Level::createObject(int x, int y, SDL_Texture* tex, GameInfo& info) {
+void Level::createObject(int x, int y, SDL_Texture* tex, GameInfo& info, bool passable) {
     GameObject o;
     o.type = ObjectType::level;
     o.position = glm::vec2(x, y);
     o.texture = tex;
-    o.collider = { .x = 0, .y = 0, .w = static_cast<float>(info.TILE_SIZE), .h = static_cast<float>(info.TILE_SIZE)};
+    if (passable) {
+        o.collider = SDL_FRect { .x = 0, .y = 0, .w = 0, .h = 0 };
+    } else {
+        o.collider = SDL_FRect { .x = 0, .y = 0, .w = static_cast<float>(info.TILE_SIZE), .h = static_cast<float>(info.TILE_SIZE) };
+    }
+    //o.collider = { .x = 0, .y = 0, .w = static_cast<float>(info.TILE_SIZE), .h = static_cast<float>(info.TILE_SIZE)};
     info.gs->layers[LAYER_IDX_LEVEL].push_back(o);
 }
 
@@ -25,6 +30,32 @@ bool Level::load(const string& filename, GameInfo& info) {
 
 
     const auto& level = data["levels"][0];  // first level
+    info.gs->mapWidth = level["pxWid"];
+    info.gs->mapHeight = level["pxHei"];
+
+    // bg
+    const auto& bgPos = level["__bgPos"];
+    const auto& topLeft = bgPos["topLeftPx"];
+    const auto& scale = bgPos["scale"];
+    const auto& crop = bgPos["cropRect"];
+
+    // Source rectangle: cropped portion of the image.
+    bg_src = {
+        static_cast<float>(crop[0].get<double>()),
+        static_cast<float>(crop[1].get<double>()),
+        static_cast<float>(crop[2].get<double>()),
+        static_cast<float>(crop[3].get<double>())
+    };
+
+    // Destination rectangle: LDtk-calculated position and size.
+    bg_dst = {
+        static_cast<float>(topLeft[0].get<int>()),
+        static_cast<float>(topLeft[1].get<int>()),
+        bg_src.w * static_cast<float>(scale[0].get<double>()),
+        bg_src.h * static_cast<float>(scale[1].get<double>())
+    };
+
+
     for (const auto& layer : level["layerInstances"]) {
         string type = layer["__type"];
 
@@ -45,11 +76,11 @@ bool Level::load(const string& filename, GameInfo& info) {
 
                 switch (type) {
                     case TileType::Computer: {
-                        createObject(x, y, info.res->texComputer, info);
+                        createObject(x, y, info.res->texComputer, info, true);
                         break;
                     }
                     case TileType::Grass: {
-                        createObject(x, y, info.res->texGrass, info);
+                        createObject(x, y, info.res->texGrass, info, true);
                         break;
                     }
                     case TileType::Ground: {
@@ -61,7 +92,7 @@ bool Level::load(const string& filename, GameInfo& info) {
                         break;
                     }
                     case TileType::Rock: {
-                        createObject(x, y, info.res->texRock, info);
+                        createObject(x, y, info.res->texRock, info, true);
                         break;
                     }
                     case TileType::Underground: {
@@ -69,7 +100,7 @@ bool Level::load(const string& filename, GameInfo& info) {
                         break;
                     }
                     case TileType::Weed: {
-                        createObject(x, y, info.res->texWeed, info);
+                        createObject(x, y, info.res->texWeed, info, true);
                         break;
                     }
                     default:
@@ -91,7 +122,7 @@ bool Level::load(const string& filename, GameInfo& info) {
                     o.currentAnimation = static_cast<int>(Resources::ENEMY::IDLE);
                     o.animations = info.res->enemyAnims;
                     o.collider = SDL_FRect {
-                        .x = 10, .y = 4, .w = 12, .h = 28
+                        .x = 7, .y = 4, .w = 18, .h = 28
                     };
                     o.maxSpeedX = 15;
                     o.dynamic = true;
@@ -108,8 +139,8 @@ bool Level::load(const string& filename, GameInfo& info) {
                     o.maxSpeedX = 100;
                     o.dynamic = true;
                     o.collider = {
-                        .x = 11, .y = 6,
-                        .w = 10, .h = 26
+                        .x = 8, .y = 4,
+                        .w = 16, .h = 27
                     };
                     info.gs->layers[LAYER_IDX_CHARACTERS].push_back(o);
                     info.gs->playerIndex = info.gs->layers[LAYER_IDX_CHARACTERS].size() - 1;

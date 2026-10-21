@@ -23,8 +23,9 @@ public:
     const size_t LAYER_IDX_LEVEL = 0;
     const size_t LAYER_IDX_CHARACTERS = 1;
     bool load(const string& filename, GameInfo& info);
-    void createObject(int x, int y, SDL_Texture* tex, GameInfo& info);
-
+    void createObject(int x, int y, SDL_Texture* tex, GameInfo& info, bool passable = false);
+    SDL_FRect bg_src;
+    SDL_FRect bg_dst;
 private:
     nlohmann::json data;
 };

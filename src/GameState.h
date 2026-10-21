@@ -7,6 +7,8 @@ struct GameState {
     vector<GameObject> bullets;
 
     int playerIndex;
+    int mapWidth;
+    int mapHeight;
     SDL_FRect mapViewport;
     float bg2Scroll, bg3Scroll, bg4Scroll;
     bool debugMode;
@@ -14,6 +16,8 @@ struct GameState {
     GameState() {}
     GameState(SDLState& state) {
         playerIndex = -1;
+        mapWidth = 0;
+        mapHeight = 0;
         mapViewport = SDL_FRect {
             .x = 0, .y = 0, 
             .w = static_cast<float>(state.logW), 
